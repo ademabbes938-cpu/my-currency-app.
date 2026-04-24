@@ -1,214 +1,78 @@
 from flask import Flask, render_template_string, request
+import requests
 
 app = Flask(__name__)
 
-# أسعار الصرف المحدثة (مقابل 1 دينار تونسي)
-EXCHANGE_RATES = {
-    'USD': 3.12, 'EUR': 3.35, 'TRY': 0.096, 'JPY': 0.020,
-    'SAR': 0.83, 'AED': 0.85, 'GBP': 3.90, 'CAD': 2.28, 'QAR': 0.86
-}
+# رابط جلب أسعار الصرف الحية (تلقائي لكل عملات العالم)
+API_URL = "https://api.exchangerate-api.com/v4/latest/TND"
+
+def get_live_rates():
+    try:
+        # جلب البيانات من الإنترنت
+        response = requests.get(API_URL, timeout=5)
+        data = response.json()
+        return data.get('rates', {})
+    except Exception:
+        # قائمة احتياطية في حال تعطل الإنترنت مؤقتاً
+        return {'USD': 0.32, 'EUR': 0.30, 'TRY': 10.5, 'SAR': 1.2, 'TND': 1.0, 'GBP': 0.25}
 
 HTML_PAGE = '''
 <!DOCTYPE html>
-<html lang="fr" dir="ltr">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Echange avec le Dinar Tunisien</title>
+    <title>Echange Global - Dinar Tunisien</title>
     <style>
-        :root {
-            --tunisian-red: #E70013; /* اللون الأحمر التونسي الرسمي */
-            --white: #ffffff;
-            --bg-light: #fdfdfd;
-        }
-
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background: var(--bg-light); 
-            margin: 0; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            min-height: 100vh;
-        }
-
-        .container {
-            background: var(--white);
-            width: 100%;
-            max-width: 400px;
-            padding: 30px;
-            border-radius: 25px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.06);
-            text-align: center;
-            border: 1px solid #f1f1f1;
-        }
-
-        /* تصميم شعار E بخطين */
-        .logo-box {
-            width: 80px;
-            height: 80px;
-            background: var(--tunisian-red);
-            margin: 0 auto 20px;
-            border-radius: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
-
-        .logo-e {
-            color: white;
-            font-size: 50px;
-            font-weight: 900;
-            position: relative;
-            font-family: 'Georgia', serif;
-        }
-
-        .logo-e::before {
-            content: "";
-            position: absolute;
-            left: -5px;
-            top: 40%;
-            width: 50px;
-            height: 4px;
-            background: white;
-            box-shadow: 0 12px 0 white; /* الخط الثاني */
-        }
-
-        h1 {
-            color: var(--tunisian-red);
-            font-size: 1.4rem;
-            margin-bottom: 20px;
-            font-weight: bold;
-        }
-
-        /* مكان الصورة الرئيسية */
-        .featured-image {
-            width: 100%;
-            height: 160px;
-            object-fit: cover;
-            border-radius: 15px;
-            margin-bottom: 25px;
-            border: 1px solid #eee;
-        }
-
-        .form-group {
-            text-align: left;
-            margin-bottom: 15px;
-        }
-
-        label {
-            display: block;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: #666;
-            margin-bottom: 8px;
-        }
-
-        input, select {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #f1f1f1;
-            border-radius: 10px;
-            font-size: 1rem;
-            box-sizing: border-box;
-            background: #fafafa;
-            transition: 0.3s;
-        }
-
-        input:focus {
-            border-color: var(--tunisian-red);
-            outline: none;
-            background: white;
-        }
-
-        .btn-submit {
-            width: 100%;
-            padding: 15px;
-            background: var(--tunisian-red);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.3s;
-            margin-top: 10px;
-        }
-
-        .btn-submit:hover {
-            background: #c60011;
-            transform: scale(1.02);
-        }
-
-        .result-box {
-            margin-top: 25px;
-            padding: 20px;
-            background: #fff8f8;
-            border-radius: 15px;
-            border: 2px solid #ffebeb;
-        }
-
-        .res-label {
-            font-size: 0.9rem;
-            color: #888;
-        }
-
-        .res-amount {
-            font-size: 1.8rem;
-            font-weight: bold;
-            color: var(--tunisian-red);
-            margin-top: 5px;
-        }
-
-        .credit {
-            margin-top: 30px;
-            font-size: 0.75rem;
-            color: #bbb;
-        }
+        :root { --tunisian-red: #E70013; --white: #ffffff; --soft-gray: #f8f9fa; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--soft-gray); margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        .main-card { background: var(--white); width: 100%; max-width: 450px; padding: 40px; border-radius: 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.07); text-align: center; border: 1px solid #f0f0f0; }
+        .brand-logo { width: 140px; height: 140px; margin: 0 auto 30px; display: block; }
+        h1 { color: #1a1a1a; font-size: 1.5rem; margin-bottom: 30px; font-weight: 800; }
+        .input-box { text-align: left; margin-bottom: 20px; }
+        label { display: block; font-size: 0.9rem; font-weight: 700; color: #555; margin-bottom: 8px; }
+        input, select { width: 100%; padding: 15px; border: 2px solid #eee; border-radius: 15px; font-size: 1.1rem; box-sizing: border-box; }
+        input:focus { border-color: var(--tunisian-red); outline: none; }
+        .btn-action { width: 100%; padding: 18px; background: var(--tunisian-red); color: white; border: none; border-radius: 15px; font-size: 1.2rem; font-weight: bold; cursor: pointer; transition: 0.3s; box-shadow: 0 10px 20px rgba(231, 0, 19, 0.2); }
+        .btn-action:hover { background: #c60011; transform: translateY(-2px); }
+        .result-panel { margin-top: 30px; padding: 20px; background: #fffafa; border-radius: 20px; border: 2px solid #ffebeb; }
+        .res-value { font-size: 2.2rem; font-weight: 900; color: var(--tunisian-red); }
+        .dev-credit { margin-top: 35px; font-size: 0.8rem; color: #ccc; border-top: 1px solid #f9f9f9; padding-top: 15px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="logo-box">
-            <span class="logo-e">E</span>
+    <div class="main-card">
+        <div class="brand-logo">
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <rect x="5" y="5" width="90" height="90" rx="22" fill="#E70013" />
+                <path d="M35 32 H65 M35 50 H60 M35 68 H65 M35 32 V68" stroke="white" stroke-width="8" stroke-linecap="round" fill="none" />
+                <line x1="25" y1="43" x2="48" y2="43" stroke="white" stroke-width="4" stroke-linecap="round" />
+                <line x1="25" y1="57" x2="48" y2="57" stroke="white" stroke-width="4" stroke-linecap="round" />
+            </svg>
         </div>
-
-        <h1>Echange avec le Dinar Tunisien</h1>
-
-        <img src="{{ image_url }}" alt="Tunisie Exchange" class="featured-image">
-
+        <h1>Echange avec le Dinar</h1>
         <form method="POST">
-            <div class="form-group">
+            <div class="input-box">
                 <label>Montant en (TND)</label>
                 <input type="number" step="0.001" name="amount" placeholder="0.000" required value="{{ amount }}">
             </div>
-
-            <div class="form-group">
-                <label>Vers la devise</label>
+            <div class="input-box">
+                <label>Vers la devise (Toutes les monnaies)</label>
                 <select name="currency">
-                    <option value="USD" {% if currency == 'USD' %}selected{% endif %}>🇺🇸 Dollar US (USD)</option>
-                    <option value="EUR" {% if currency == 'EUR' %}selected{% endif %}>🇪🇺 Euro (EUR)</option>
-                    <option value="TRY" {% if currency == 'TRY' %}selected{% endif %}>🇹🇷 Lire Turque (TRY)</option>
-                    <option value="JPY" {% if currency == 'JPY' %}selected{% endif %}>🇯🇵 Yen Japonais (JPY)</option>
-                    <option value="SAR" {% if currency == 'SAR' %}selected{% endif %}>🇸🇦 Riyal Saoudien (SAR)</option>
-                    <option value="GBP" {% if currency == 'GBP' %}selected{% endif %}>🇬🇧 Livre Sterling (GBP)</option>
+                    {% for code in rates.keys()|sort %}
+                    <option value="{{ code }}" {% if currency == code %}selected{% endif %}>{{ code }}</option>
+                    {% endfor %}
                 </select>
             </div>
-
-            <button type="submit" class="btn-submit">Calculer l'Echange</button>
+            <button type="submit" class="btn-action">CALCULER</button>
         </form>
-
         {% if result %}
-        <div class="result-box">
-            <div class="res-label">Montant converti :</div>
-            <div class="res-amount">{{ result }} {{ currency }}</div>
+        <div class="result-panel">
+            <div style="color: #999;">Valeur convertية :</div>
+            <div class="res-value">{{ result }} {{ currency }}</div>
         </div>
         {% endif %}
-
-        <div class="credit">
-            Design par Adam | Moknine, Tunisie &copy; 2026
-        </div>
+        <div class="dev-credit">Développé par Adam | Moknine, Tunisie 🇹🇳</div>
     </div>
 </body>
 </html>
@@ -216,26 +80,18 @@ HTML_PAGE = '''
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    # ضع رابط الصورة هنا يا آدم
-    image_url = 'https://flagpedia.net/data/flags/w580/tn.png' # صورة افتراضية لعلم تونس
-    
-    result = None
-    amount = ''
-    currency = 'USD'
-    
+    rates = get_live_rates()
+    result, amount, currency = None, '', 'USD'
     if request.method == 'POST':
         try:
             amount_val = float(request.form['amount'])
             currency = request.form['currency']
-            rate = EXCHANGE_RATES.get(currency, 1)
-            # التحويل من دينار إلى عملة أجنبية
-            converted = amount_val / rate
-            result = "{:,.2f}".format(converted)
+            rate = rates.get(currency, 1)
+            # النتيجة = المبلغ مضروب في سعر الصرف مقابل 1 دينار
+            result = "{:,.2f}".format(amount_val * rate)
             amount = amount_val
-        except:
-            result = "Erreur"
-            
-    return render_template_string(HTML_PAGE, result=result, amount=amount, currency=currency, image_url=image_url)
+        except: result = "Erreur"
+    return render_template_string(HTML_PAGE, rates=rates, result=result, amount=amount, currency=currency)
 
 if __name__ == '__main__':
     app.run(debug=True)
