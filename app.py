@@ -1,7 +1,6 @@
-from flask import Flask, render_template_string, request, send_file
+from flask import Flask, render_template_string, request
 import requests
 import os
-import io
 
 app = Flask(__name__)
 
@@ -14,7 +13,7 @@ CURRENCIES = {
     "AMD": "Dram arménien", "AWG": "Florin d'Aruba", "AUD": "Dollar australien", "AZN": "Manat azerbaïdjanais",
     "BSD": "Dollar bahaméen", "BHD": "Dinar bahreïni", "BDT": "Taka bangladais", "BBD": "Dollar barbadien",
     "BYN": "Rouble biélorusse", "BZD": "Dollar bélizien", "BMD": "Dollar bermudien", "BTN": "Ngultrum bhoutanais",
-    "BOB": "Boliviano bolivien", "BAM": "Mark convertible bosniaque", "BWP": "Pula botswanais", "BRL": "Réal بريزيلي",
+    "BOB": "Boliviano bolivien", "BAM": "Mark convertible bosniaque", "BWP": "Pula botswanais", "BRL": "Réal brésilien",
     "BND": "Dollar de Brunei", "BGN": "Lev bulgare", "BIF": "Franc burundais", "KHR": "Riel cambodgien",
     "CAD": "Dollar canadien", "CVE": "Escudo cap-verdien", "KYD": "Dollar des îles Caïmans", "XAF": "Franc CFA (BEAC)",
     "XOF": "Franc CFA (BCEAO)", "XPF": "Franc CFP", "CLP": "Peso chilien", "CNY": "Yuan chinois",
@@ -34,10 +33,10 @@ CURRENCIES = {
     "MVR": "Rufiyaa maldivienne", "IMP": "Livre mannoise", "MRU": "Ouguiya mauritanienne", "MUR": "Roupie mauricienne",
     "MXN": "Peso mexicain", "MDL": "Leu moldave", "MNT": "Tugrik mongol", "MAD": "Dirham marocain",
     "MZN": "Metical mozambicain", "MMK": "Kyat birman", "NAD": "Dollar namibien", "NPR": "Roupie népalaise",
-    "ANG": "Florin des Antilles néerlandaises", "TWD": "Nouveau dollar taïwanais", "NZD": "Dollar néو-zélandais", "NIO": "Córdoba nicaraguayen",
+    "ANG": "Florin des Antilles néerlandaises", "TWD": "Nouveau dollar taïwanais", "NZD": "Dollar néo-zélandais", "NIO": "Córdoba nicaraguayen",
     "NGN": "Naira nigérian", "NOK": "Couronne norvégienne", "OMR": "Rial omanais", "PKR": "Roupie pakistanaise",
     "PAB": "Balboa panaméen", "PGK": "Kina papouan-guinéen", "PYG": "Guaraní paraguayen", "PEN": "Sol péruvien",
-    "PHP": "Peso philippin", "PLN": "Zloty polوناي", "GBP": "Livre sterling", "QAR": "Riyal qatari",
+    "PHP": "Peso philippin", "PLN": "Zloty polonais", "GBP": "Livre sterling", "QAR": "Riyal qatari",
     "RON": "Leu roumain", "RUB": "Rouble russe", "RWF": "Franc rwandais", "SHP": "Livre de Sainte-Hélène",
     "WST": "Tala samoan", "STN": "Dobra santoméen", "SAR": "Riyal saoudien", "RSD": "Dinar serbe",
     "SCR": "Roupie seychelloise", "SLL": "Leone sierra-léonais", "SGD": "Dollar de Singapour", "SBD": "Dollar des îles Salomon",
@@ -58,8 +57,8 @@ HTML_PAGE = '''
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Echange Dinar Tunisien</title>
-    <!-- Favicon SVG (الشعار حرف E مع خطين طوليين بني) -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22white%22/><text y=%22.9em%22 font-size=%2280%22 font-family=%22serif%22 fill=%22%23d38b5d%22 font-weight=%22bold%22 x=%2210%22>E</text><rect x=%2235%22 y=%2210%22 width=%226%22 height=%2280%22 fill=%22%23d38b5d%22/><rect x=%2255%22 y=%2210%22 width=%226%22 height=%2280%22 fill=%22%23d38b5d%22/></svg>">
+    <!-- الأيقونة تظهر بجانب الرابط (حرف E مع خط واحد بني) -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22white%22/><text y=%22.9em%22 font-size=%2280%22 font-family=%22serif%22 fill=%22%23d38b5d%22 font-weight=%22bold%22 x=%2220%22>E</text><rect x=%2242%22 y=%2210%22 width=%228%22 height=%2280%22 fill=%22%23d38b5d%22/></svg>">
     
     <style>
         :root { --primary: #d38b5d; --dark: #1a202c; --bg: #f8fafc; }
@@ -70,15 +69,14 @@ HTML_PAGE = '''
             border-bottom: 6px solid var(--primary);
         }
 
-        /* تصميم الشعار في الهيدر */
+        /* الشعار في الهيدر */
         .logo-box {
-            width: 80px; height: 80px; background: white; margin: 0 auto 15px;
-            border-radius: 12px; display: flex; align-items: center; justify-content: center;
-            position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            width: 85px; height: 85px; background: white; margin: 0 auto 15px;
+            border-radius: 15px; display: flex; align-items: center; justify-content: center;
+            position: relative; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
-        .logo-e { color: var(--primary); font-size: 55px; font-weight: bold; font-family: serif; position: relative; }
-        .line-1, .line-2 { position: absolute; width: 4px; height: 50px; background: var(--primary); top: 15px; }
-        .line-1 { left: 28px; } .line-2 { left: 45px; }
+        .logo-e { color: var(--primary); font-size: 60px; font-weight: bold; font-family: serif; position: relative; z-index: 1; }
+        .central-line { position: absolute; width: 8px; height: 60px; background: var(--primary); left: 38px; top: 12px; z-index: 2; border-radius: 4px; }
 
         .container { max-width: 550px; margin: -40px auto 40px; padding: 20px; }
         
@@ -120,8 +118,7 @@ HTML_PAGE = '''
 <header>
     <div class="logo-box">
         <span class="logo-e">E</span>
-        <div class="line-1"></div>
-        <div class="line-2"></div>
+        <div class="central-line"></div>
     </div>
     <h1>Echange Dinar Tunisien</h1>
 </header>
@@ -173,7 +170,7 @@ def home():
         try:
             amount_val = float(request.form.get('amount', 1))
             to_currency = request.form.get('to_currency', 'EUR')
-            # Fetch Live Data
+            # جلب البيانات الحية
             data = requests.get(API_URL, timeout=5).json()
             rate = data['rates'].get(to_currency, 1)
             result = "{:,.2f}".format(amount_val * rate)
