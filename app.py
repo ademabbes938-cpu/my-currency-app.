@@ -4,126 +4,170 @@ import os
 
 app = Flask(__name__)
 
-# رابط جلب أسعار الصرف الحية
+# URL API pour les taux de change (Base TND)
 API_URL = "https://api.exchangerate-api.com/v4/latest/TND"
 
-# القائمة الكاملة لجميع العملات العالمية بالفرنسية
-CURRENCY_NAMES = {
-    "AED": "Dirham des Émirats arabes unis", "AFN": "Afghani afghan", "ALL": "Lek albanais", "AMD": "Dram arménien",
-    "ANG": "Florin des Antilles néerlandaises", "AOA": "Kwanza angolais", "ARS": "Peso argentin", "AUD": "Dollar australien",
-    "AWG": "Florin d'Aruba", "AZN": "Manat azerbaïdjanais", "BAM": "Mark convertible bosniaque", "BBD": "Dollar barbadien",
-    "BDT": "Taka bangladais", "BGN": "Lev bulgare", "BHD": "Dinar bahreïni", "BIF": "Franc burundais",
-    "BMD": "Dollar bermudien", "BND": "Dollar de Brunei", "BOB": "Boliviano bolivien", "BRL": "Réal brésilien",
-    "BSD": "Dollar bahaméen", "BTN": "Ngultrum bhoutanais", "BWP": "Pula botswanais", "BYN": "Rouble biélorusse",
-    "BZD": "Dollar bélizien", "CAD": "Dollar canadien", "CDF": "Franc congolais", "CHF": "Franc suisse",
-    "CLP": "Peso chilien", "CNY": "Yuan chinois", "COP": "Peso colombien", "CRC": "Colón costaricain",
-    "CUP": "Peso cubain", "CVE": "Escudo cap-verdien", "CZK": "Couronne tchèque", "DJF": "Franc djiboutien",
-    "DKK": "Couronne danoise", "DOP": "Peso dominicain", "DZD": "Dinar algérien", "EGP": "Livre égyptienne",
-    "ERN": "Nakfa érythréen", "ETB": "Birr éthiopien", "EUR": "Euro", "FJD": "Dollar fidjien",
-    "FKP": "Livre des îles Malouines", "FOK": "Couronne féroïenne", "GBP": "Livre sterling", "GEL": "Lari géorgien",
-    "GGP": "Livre de Guernesey", "GHS": "Cedi ghanéen", "GIP": "Livre de Gibraltar", "GMD": "Dalasi gambien",
-    "GNF": "Franc guinéen", "GTQ": "Quetzal guatémaltèque", "GYD": "Dollar guyanien", "HKD": "Dollar de Hong Kong",
-    "HNL": "Lempira hondurien", "HRK": "Kuna croate", "HTG": "Gourde haïtienne", "HUF": "Forint hongrois",
-    "IDR": "Roupie indonésienne", "ILS": "Shekel israélien", "IMP": "Livre mannoise", "INR": "Roupie indienne",
-    "IQD": "Dinar irakien", "IRR": "Rial iranien", "ISK": "Couronne islandaise", "JEP": "Livre de Jersey",
-    "JMD": "Dollar jamaïcain", "JOD": "Dinar jordanien", "JPY": "Yen japonais", "KES": "Shilling kényan",
-    "KGS": "Som kirghize", "KHR": "Riel cambodgien", "KID": "Dollar des Kiribati", "KMF": "Franc comorien",
-    "KRW": "Won sud-coréen", "KWD": "Dinar koweïtien", "KYD": "Dollar des îles Caïmans", "KZT": "Tenge kazakh",
-    "LAK": "Kip laotien", "LBP": "Livre libanaise", "LKR": "Roupie srilankaise", "LRD": "Dollar libérien",
-    "LSL": "Loti lesothan", "LYD": "Dinar libyen", "MAD": "Dirham marocain", "MDL": "Leu moldave",
-    "MGA": "Ariary malgache", "MKD": "Denar macédonien", "MMK": "Kyat birman", "MNT": "Tugrik mongol",
-    "MOP": "Pataca macanaise", "MRU": "Ouguiya mauritanienne", "MUR": "Roupie mauricienne", "MVR": "Rufiyaa maldivienne",
-    "MWK": "Kwacha malawien", "MXN": "Peso mexicain", "MYR": "Ringgit malais", "MZN": "Metical mozambicain",
-    "NAD": "Dollar namibien", "NGN": "Naira nigérian", "NIO": "Córdoba nicaraguayen", "NOK": "Couronne norvégienne",
-    "NPR": "Roupie népalaise", "NZD": "Dollar néo-zélandais", "OMR": "Rial omanais", "PAB": "Balboa panaméen",
-    "PEN": "Sol péruvien", "PGK": "Kina papouan-guinéen", "PHP": "Peso philippin", "PKR": "Roupie pakistanaise",
-    "PLN": "Zloty polonais", "PYG": "Guaraní paraguayen", "QAR": "Riyal qatari", "RON": "Leu roumain",
-    "RSD": "Dinar serbe", "RUB": "Rouble russe", "RWF": "Franc rwandais", "SAR": "Riyal saoudien",
-    "SBD": "Dollar des îles Salomon", "SCR": "Roupie seychelloise", "SDG": "Livre soudanaise", "SEK": "Couronne suédoise",
-    "SGD": "Dollar de Singapour", "SHP": "Livre de Sainte-Hélène", "SLL": "Leone sierra-léonais", "SOS": "Shilling somalien",
-    "SRD": "Dollar surinamais", "SSP": "Livre sud-soudanaise", "STN": "Dobra santoméen", "SYP": "Livre syrienne",
-    "SZL": "Lilangeni swazi", "THB": "Baht thaïlandais", "TJS": "Somoni tadjik", "TMT": "Manat turkmène",
-    "TND": "Dinar tunisien", "TOP": "Pa'anga tongan", "TRY": "Lire turque", "TTD": "Dollar de Trinité-et-Tobago",
-    "TVD": "Dollar tuvaluan", "TWD": "Nouveau dollar taïwanais", "TZS": "Shilling tanzanien", "UAH": "Hryvnia ukrainienne",
-    "UGX": "Shilling ougandais", "USD": "Dollar américain", "UYU": "Peso uruguayen", "UZS": "Som ouzbek",
-    "VES": "Bolivar vénézuélien", "VND": "Dong vietnamien", "VUV": "Vatu vanuatais", "WST": "Tala samoan",
-    "XAF": "Franc CFA (BEAC)", "XCD": "Dollar des Caraïbes orientales", "XDR": "Droits de tirage spéciaux",
-    "XOF": "Franc CFA (BCEAO)", "XPF": "Franc CFP", "YER": "Rial yéménite", "ZAR": "Rand sud-africain",
-    "ZMW": "Kwacha zambien", "ZWL": "Dollar zimbabwéen"
+# Liste complète des 160 devises en Français (Triée de A à Z)
+CURRENCIES = {
+    "AFN": "Afghani afghan", "ALL": "Lek albanais", "DZD": "Dinar algérien", "EUR": "Euro",
+    "AMD": "Dram arménien", "AWG": "Florin d'Aruba", "AUD": "Dollar australien", "AZN": "Manat azerbaïdjanais",
+    "BSD": "Dollar bahaméen", "BHD": "Dinar bahreïni", "BDT": "Taka bangladais", "BBD": "Dollar barbadien",
+    "BYN": "Rouble biélorusse", "BZD": "Dollar bélizien", "BMD": "Dollar bermudien", "BTN": "Ngultrum bhoutanais",
+    "BOB": "Boliviano bolivien", "BAM": "Mark convertible bosniaque", "BWP": "Pula botswanais", "BRL": "Réal brésilien",
+    "BND": "Dollar de Brunei", "BGN": "Lev bulgare", "BIF": "Franc burundais", "KHR": "Riel cambodgien",
+    "CAD": "Dollar canadien", "CVE": "Escudo cap-verdien", "KYD": "Dollar des îles Caïmans", "XAF": "Franc CFA (BEAC)",
+    "XOF": "Franc CFA (BCEAO)", "XPF": "Franc CFP", "CLP": "Peso chilien", "CNY": "Yuan chinois",
+    "COP": "Peso colombien", "KMF": "Franc comorien", "CDF": "Franc congolais", "CRC": "Colón costaricain",
+    "HRK": "Kuna croate", "CUP": "Peso cubain", "DKK": "Couronne danoise", "DJF": "Franc djiboutien",
+    "DOP": "Peso dominicain", "XCD": "Dollar des Caraïbes orientales", "EGP": "Livre égyptienne", "ERN": "Nakfa érythréen",
+    "ETB": "Birr éthiopien", "FKP": "Livre des îles Malouines", "FOK": "Couronne féroïenne", "FJD": "Dollar fidjien",
+    "GMD": "Dalasi gambien", "GEL": "Lari géorgien", "GHS": "Cedi ghanéen", "GIP": "Livre de Gibraltar",
+    "GTQ": "Quetzal guatémaltèque", "GGP": "Livre de Guernesey", "GNF": "Franc guinéen", "GYD": "Dollar guyanien",
+    "HTG": "Gourde haïtienne", "HNL": "Lempira hondurien", "HKD": "Dollar de Hong Kong", "HUF": "Forint hongrois",
+    "ISK": "Couronne islandaise", "INR": "Roupie indienne", "IDR": "Roupie indonésienne", "IRR": "Rial iranien",
+    "IQD": "Dinar irakien", "ILS": "Shekel israélien", "JMD": "Dollar jamaïcain", "JPY": "Yen japonais",
+    "JEP": "Livre de Jersey", "JOD": "Dinar jordanien", "KZT": "Tenge kazakh", "KES": "Shilling kényan",
+    "KGS": "Som kirghize", "KWD": "Dinar koweïtien", "LAK": "Kip laotien", "LBP": "Livre libanaise",
+    "LSL": "Loti lesothan", "LRD": "Dollar libérien", "LYD": "Dinar libyen", "MOP": "Pataca macanaise",
+    "MKD": "Denar macédonien", "MGA": "Ariary malgache", "MWK": "Kwacha malawien", "MYR": "Ringgit malais",
+    "MVR": "Rufiyaa maldivienne", "IMP": "Livre mannoise", "MRU": "Ouguiya mauritanienne", "MUR": "Roupie mauricienne",
+    "MXN": "Peso mexicain", "MDL": "Leu moldave", "MNT": "Tugrik mongol", "MAD": "Dirham marocain",
+    "MZN": "Metical mozambicain", "MMK": "Kyat birman", "NAD": "Dollar namibien", "NPR": "Roupie népalaise",
+    "ANG": "Florin des Antilles néerlandaises", "TWD": "Nouveau dollar taïwanais", "NZD": "Dollar néo-zélandais", "NIO": "Córdoba nicaraguayen",
+    "NGN": "Naira nigérian", "NOK": "Couronne norvégienne", "OMR": "Rial omanais", "PKR": "Roupie pakistanaise",
+    "PAB": "Balboa panaméen", "PGK": "Kina papouan-guinéen", "PYG": "Guaraní paraguayen", "PEN": "Sol péruvien",
+    "PHP": "Peso philippin", "PLN": "Zloty polonais", "GBP": "Livre sterling", "QAR": "Riyal qatari",
+    "RON": "Leu roumain", "RUB": "Rouble russe", "RWF": "Franc rwandais", "SHP": "Livre de Sainte-Hélène",
+    "WST": "Tala samoan", "STN": "Dobra santoméen", "SAR": "Riyal saoudien", "RSD": "Dinar serbe",
+    "SCR": "Roupie seychelloise", "SLL": "Leone sierra-léonais", "SGD": "Dollar de Singapour", "SBD": "Dollar des îles Salomon",
+    "SOS": "Shilling somalien", "ZAR": "Rand sud-africain", "KRW": "Won sud-coréen", "SSP": "Livre sud-soudanaise",
+    "LKR": "Roupie srilankaise", "SDG": "Livre soudanaise", "SRD": "Dollar surinamais", "SZL": "Lilangeni swazi",
+    "SEK": "Couronne suédoise", "CHF": "Franc suisse", "SYP": "Livre syrienne", "TJS": "Somoni tadjik",
+    "TZS": "Shilling tanzanien", "THB": "Baht thaïlandais", "TOP": "Pa'anga tongan", "TTD": "Dollar de Trinité-et-Tobago",
+    "TND": "Dinar tunisien", "TRY": "Lire turque", "TMT": "Manat turkmène", "TVD": "Dollar tuvaluan",
+    "UGX": "Shilling ougandais", "UAH": "Hryvnia ukrainienne", "AED": "Dirham des Émirats arabes unis", "USD": "Dollar américain",
+    "UYU": "Peso uruguayen", "UZS": "Som ouzbek", "VUV": "Vatu vanuatais", "VES": "Bolivar vénézuélien",
+    "VND": "Dong vietnamien", "YER": "Rial yéménite", "ZMW": "Kwacha zambien", "ZWL": "Dollar zimbabwéen"
 }
 
-def get_live_rates():
-    try:
-        response = requests.get(API_URL, timeout=5)
-        return response.json().get('rates', {})
-    except:
-        return {"USD": 0.32, "EUR": 0.30, "TND": 1.0}
-
-HTML_TEMPLATE = '''
+HTML_PAGE = '''
 <!DOCTYPE html>
 <html lang="fr" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Convertisseur Adam - 160+ Devises</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23E70013'/><path d='M35 30 H65 M35 50 H60 M35 70 H65 M35 30 V70' stroke='white' stroke-width='8' stroke-linecap='round' fill='none'/></svg>">
+    <title>Echange Dinar Tunisien</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .card { background: white; padding: 30px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 500px; text-align: center; border-top: 6px solid #E70013; }
-        h1 { color: #333; font-size: 1.5rem; margin-bottom: 25px; }
-        .input-group { text-align: left; margin-bottom: 20px; }
-        label { font-weight: bold; color: #666; font-size: 0.9rem; }
-        input, select { width: 100%; padding: 12px; margin-top: 8px; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; font-size: 1rem; }
-        .btn { width: 100%; padding: 15px; background: #E70013; color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
-        .btn:hover { background: #c60011; transform: translateY(-2px); }
-        .result { margin-top: 25px; padding: 20px; background: #fff5f5; border-radius: 15px; border: 1px solid #ffe5e5; }
-        .val { font-size: 2rem; font-weight: 800; color: #E70013; }
-        footer { margin-top: 30px; font-size: 0.8rem; color: #bbb; }
+        :root { --primary: #d38b5d; --dark: #1a202c; --bg: #f8fafc; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); margin: 0; color: #333; }
+        
+        header { 
+            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=1000');
+            background-size: cover; background-position: center;
+            height: 240px; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white;
+            border-bottom: 6px solid var(--primary); text-align: center;
+        }
+
+        .tower-icon { width: 50px; height: 50px; background: var(--primary); clip-path: polygon(30% 100%, 70% 100%, 70% 40%, 60% 30%, 60% 20%, 40% 20%, 40% 30%, 30% 40%); margin-bottom: 10px; }
+
+        .container { max-width: 600px; margin: -40px auto 50px; padding: 20px; }
+        
+        .card { 
+            background: white; padding: 30px; border-radius: 25px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center;
+        }
+
+        h1 { margin: 0; font-size: 1.8rem; }
+        h2 { color: var(--primary); margin-top: 10px; margin-bottom: 30px; font-size: 1.4rem; }
+
+        .form-group { text-align: left; margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; color: #666; font-size: 0.85rem; }
+        input, select { 
+            width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 12px; 
+            box-sizing: border-box; font-size: 1rem; outline: none;
+        }
+        input:focus { border-color: var(--primary); }
+
+        .btn { 
+            background: var(--primary); color: white; padding: 15px; border: none; 
+            border-radius: 12px; width: 100%; font-weight: bold; cursor: pointer; font-size: 1.1rem;
+            transition: 0.3s;
+        }
+        .btn:hover { background: #b57248; transform: translateY(-2px); }
+
+        .result-box { 
+            margin-top: 30px; padding: 20px; background: #fffaf5; 
+            border: 2px dashed var(--primary); border-radius: 15px; 
+        }
+        .result-val { font-size: 2.3rem; font-weight: 800; color: var(--primary); }
+
+        footer { text-align: center; padding: 30px; color: #999; font-size: 0.8rem; }
+        .signature { font-weight: bold; color: var(--dark); display: block; margin-top: 10px; }
     </style>
 </head>
 <body>
+
+<header>
+    <div class="tower-icon"></div>
+    <h1>Echange Dinar Tunisien</h1>
+    <p>Service de Change - La Chebba</p>
+</header>
+
+<div class="container">
     <div class="card">
-        <h1>Convertisseur Global Adam</h1>
+        <h2>Convertisseur (A-Z)</h2>
         <form method="POST">
-            <div class="input-group">
-                <label>Montant en Dinars Tunisiens (TND)</label>
+            <div class="form-group">
+                <label>Montant en TND (Dinar Tunisien)</label>
                 <input type="number" step="0.001" name="amount" value="{{ amount }}" required>
             </div>
-            <div class="input-group">
-                <label>Convertir vers</label>
-                <select name="currency">
-                    {% for code in rates.keys()|sort %}
-                    <option value="{{ code }}" {% if currency == code %}selected{% endif %}>
-                        {{ names.get(code, code) }} ({{ code }})
+            <div class="form-group">
+                <label>Devise de destination (triée alphabétiquement)</label>
+                <select name="to_currency">
+                    {% for code, name in currencies.items()|sort(attribute='1') %}
+                    <option value="{{ code }}" {% if to_currency == code %}selected{% endif %}>
+                        {{ name }} ({{ code }})
                     </option>
                     {% endfor %}
                 </select>
             </div>
-            <button type="submit" class="btn">CALCULER</button>
+            <button type="submit" class="btn">CALCULER LE CHANGE</button>
         </form>
+
         {% if result %}
-        <div class="result">
-            <div class="val">{{ result }} {{ currency }}</div>
+        <div class="result-box">
+            <p>Résultat :</p>
+            <div class="result-val">{{ result }} {{ to_currency }}</div>
         </div>
         {% endif %}
-        <footer>Réalisé par Adam - Moknine 🇹🇳</footer>
     </div>
+</div>
+
+<footer>
+    
+    <span class="signature">Adam - Moknine 🇹🇳 | Borj Khadija Edition</span>
+</footer>
+
 </body>
 </html>
 '''
 
 @app.route('/', methods=['GET', 'POST'])
-def index():
-    rates = get_live_rates()
-    result, amount, currency = None, '1.000', 'USD'
+def home():
+    result, amount, to_currency = None, "1.000", "EUR"
     if request.method == 'POST':
         try:
-            amount_val = float(request.form['amount'])
-            currency = request.form['currency']
-            result = "{:,.2f}".format(amount_val * rates.get(currency, 1))
+            amount_val = float(request.form.get('amount', 1))
+            to_currency = request.form.get('to_currency', 'EUR')
+            # Fetch Live Data
+            data = requests.get(API_URL, timeout=5).json()
+            rate = data['rates'].get(to_currency, 1)
+            result = "{:,.2f}".format(amount_val * rate)
             amount = amount_val
-        except: result = "Erreur"
-    return render_template_string(HTML_TEMPLATE, rates=rates, result=result, amount=amount, currency=currency, names=CURRENCY_NAMES)
+        except Exception:
+            result = "Service Hors-ligne"
+            
+    return render_template_string(HTML_PAGE, currencies=CURRENCIES, result=result, amount=amount, to_currency=to_currency)
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
